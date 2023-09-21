@@ -1,0 +1,108 @@
+Sub StockAnalysis()
+
+    Dim ws As Worksheet
+    Dim LastRow As Long
+    Dim Ticker As String
+    Dim OpenPrice As Double
+    Dim ClosePrice As Double
+    Dim YearlyChange As Double
+    Dim PercentChange As Double
+    Dim TotalVolume As Double
+    Dim SummaryRow As Long
+
+    ' Loop through all worksheets in the workbook
+    For Each ws In ThisWorkbook.Worksheets
+        ' Initialize variables
+        LastRow = ws.Cells(Rows.Count, 1).End(xlUp).Row
+        SummaryRow = 2 ' Start writing summary at row 2
+
+        ' Set column headers in summary
+        ws.Cells(1, 9).Value = "Ticker"
+        ws.Cells(1, 10).Value = "Yearly Change"
+        ws.Cells(1, 11).Value = "Percent Change"
+        ws.Cells(1, 12).Value = "Total Stock Volume"
+
+        ' Loop through each row of data
+        For i = 2 To LastRow
+            ' Check if the current ticker is different from the previous one
+            If ws.Cells(i, 1).Value <> ws.Cells(i - 1, 1).Value Then
+                Ticker = ws.Cells(i, 1).Value
+                OpenPrice = ws.Cells(i, 3).Value
+            End If
+
+            ' Accumulate the total stock volume
+            TotalVolume = TotalVolume + ws.Cells(i, 7).Value
+
+            ' Check if the current ticker is different from the next one
+            If ws.Cells(i, 1).Value <> ws.Cells(i + 1, 1).Value Then
+                ClosePrice = ws.Cells(i, 6).Value
+                YearlyChange = ClosePrice - OpenPrice
+                If OpenPrice <> 0 Then
+                    PercentChange = (YearlyChange / OpenPrice)
+                Else
+                    PercentChange = 0
+                End If
+
+                ' Write data to summary
+                ws.Cells(SummaryRow, 9).Value = Ticker
+                ws.Cells(SummaryRow, 10).Value = YearlyChange
+                ws.Cells(SummaryRow, 11).Value = PercentChange
+                ws.Cells(SummaryRow, 12).Value = TotalVolume
+
+                ' Apply conditional formatting
+                If YearlyChange > 0 Then
+                    ws.Cells(SummaryRow, 10).Interior.Color = RGB(0, 255, 0) ' Green
+                ElseIf YearlyChange < 0 Then
+                    ws.Cells(SummaryRow, 10).Interior.Color = RGB(255, 0, 0) ' Red
+                End If
+
+                ' Reset variables for the next ticker
+                TotalVolume = 0
+                SummaryRow = SummaryRow + 1
+            End If
+        Next i
+
+        ' Find the greatest % increase, greatest % decrease, and greatest total volume
+        Dim MaxPercentIncrease As Double
+        Dim MaxPercentDecrease As Double
+        Dim MaxTotalVolume As Double
+        Dim MaxPercentIncreaseTicker As String
+        Dim MaxPercentDecreaseTicker As String
+        Dim MaxTotalVolumeTicker As String
+
+        MaxPercentIncrease = Application.WorksheetFunction.Max(ws.Range("K2:K" & SummaryRow))
+        MaxPercentDecrease = Application.WorksheetFunction.Min(ws.Range("K2:K" & SummaryRow))
+        MaxTotalVolume = Application.WorksheetFunction.Max(ws.Range("L2:L" & SummaryRow))
+
+        For i = 2 To SummaryRow
+            If ws.Cells(i, 11).Value = MaxPercentIncrease Then
+                MaxPercentIncreaseTicker = ws.Cells(i, 9).Value
+            ElseIf ws.Cells(i, 11).Value = MaxPercentDecrease Then
+                MaxPercentDecreaseTicker = ws.Cells(i, 9).Value
+            ElseIf ws.Cells(i, 12).Value = MaxTotalVolume Then
+                MaxTotalVolumeTicker = ws.Cells(i, 9).Value
+            End If
+        Next i
+
+        ' Output the results
+        ws.Cells(2, 16).Value = "Greatest % Increase"
+        ws.Cells(3, 16).Value = "Greatest % Decrease"
+        ws.Cells(4, 16).Value = "Greatest Total Volume"
+        ws.Cells(2, 17).Value = MaxPercentIncreaseTicker
+        ws.Cells(3, 17).Value = MaxPercentDecreaseTicker
+        ws.Cells(4, 17).Value = MaxTotalVolumeTicker
+
+        ' Format the percent change output as percentage
+        ws.Range("K2:K" & SummaryRow).NumberFormat = "0.00%"
+        ws.Range("K2:K" & SummaryRow).Style = "Percent"
+        
+        ' Divide the values in the "Percent Change" column by 1
+    For i = 2 To SummaryRow
+        ws.Cells(i, 11).Value = ws.Cells(i, 11).Value / 1
+        ws.Cells(i, 11).NumberFormat = "0.00%" '
+        
+       Next i
+    Next ws
+
+End Sub
+
